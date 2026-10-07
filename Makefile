@@ -19,7 +19,22 @@ CC  ?= emcc
 ROOT_BUILD_DIR ?= _Intermediate
 ROOT_OUTPUT_DIR ?= _Builds
 
-ifeq ($(findstring em++,$(notdir $(CXX))),em++)
+# Platform selection. make evaluates `ifeq` once, while reading this file, so it
+# cannot see the `web:` target's CXX (a target-specific variable). Decide from
+# the goal the user asked for instead; when neither `web` nor `linux` is a goal,
+# infer from CXX -- the Flatpak build does `make all CXX=g++`. Native is default.
+.DEFAULT_GOAL := linux
+ifneq ($(filter web,$(MAKECMDGOALS)),)
+  BUILD_PLATFORM := web
+else ifneq ($(filter linux,$(MAKECMDGOALS)),)
+  BUILD_PLATFORM := linux
+else ifneq ($(findstring em++,$(notdir $(CXX))),)
+  BUILD_PLATFORM := web
+else
+  BUILD_PLATFORM := linux
+endif
+
+ifeq ($(BUILD_PLATFORM),web)
 	BUILD_DIR ?= $(ROOT_BUILD_DIR)/web
 	OUTPUT_DIR ?= $(ROOT_OUTPUT_DIR)/web
 	OUT ?= index
@@ -58,7 +73,7 @@ CXXFLAGS  += $(LTO_FLAGS)
 CFLAGS    += $(LTO_FLAGS)
 LDFLAGS   += $(LTO_FLAGS)
 
-ifeq ($(findstring em++,$(notdir $(CXX))),em++)
+ifeq ($(BUILD_PLATFORM),web)
   EM_COMPILE_FLAGS := -sUSE_SDL=2
   EM_LINK_FLAGS    := -sUSE_SDL=2 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2 -sFULL_ES3=1 -sALLOW_MEMORY_GROWTH=1 -sWASM=1 -sASYNCIFY -sEXPORTED_RUNTIME_METHODS=callMain
 
