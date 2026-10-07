@@ -36,4 +36,4 @@ modules:
       - type: git
         url: https://github.com/zx97/SecondRealityAwakened.git
         tag: beta-2
-        commit: 653a428cf6b277120d27bd2e830fe715fe7b2709
+        commit: 6a200bed9a1a734fe76d2a2d7ecffa6585319c59
