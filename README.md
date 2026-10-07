@@ -85,6 +85,8 @@ committed. No step is manual: `make` regenerates them as needed.
 make flatpak
 ```
 
+A prebuilt **x86_64** bundle is attached to each release (GitHub and GitLab).
+
 ## Web player
 
 Play it in a browser: **https://secondreality.pages.dev/**
