@@ -68,10 +68,15 @@ CFLAGS    += $(DEPFLAGS)
 
 # Link-Time Optimization: the linker sees every translation unit at once, so it
 # can inline across files and drop unused code. Must be on both compile and link.
-LTO_FLAGS := -flto
-CXXFLAGS  += $(LTO_FLAGS)
-CFLAGS    += $(LTO_FLAGS)
-LDFLAGS   += $(LTO_FLAGS)
+# Native only -- Emscripten's -flto drops the EM_JS `is_firefox` import (undefined
+# symbol at link, `index.wasm.lto.o: undefined symbol: is_firefox`), so the web
+# build stays without it.
+ifneq ($(BUILD_PLATFORM),web)
+  LTO_FLAGS := -flto
+  CXXFLAGS  += $(LTO_FLAGS)
+  CFLAGS    += $(LTO_FLAGS)
+  LDFLAGS   += $(LTO_FLAGS)
+endif
 
 ifeq ($(BUILD_PLATFORM),web)
   EM_COMPILE_FLAGS := -sUSE_SDL=2
