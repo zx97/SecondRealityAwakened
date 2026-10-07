@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Second Reality: Reawakened
+Comment=Remaster of the 1993 demoscene classic Second Reality
+Exec=secondreality
+Icon=io.github.zx97.SecondRealityAwakened
+Terminal=false
+Categories=Graphics;
+Keywords=demo;demoscene;second reality;future crew;

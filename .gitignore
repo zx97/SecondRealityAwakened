@@ -1,0 +1,12 @@
+# Build outputs
+_Intermediate/
+_Builds/
+*.o
+*.d
+
+# Generated at build time from the sources in tools/ (see the Makefile rules).
+Parts/ALKU/AlkuHzpicData.cpp
+Parts/TECHNO/TrollData.cpp
+Parts/LENS/LensFaceBgData.cpp
+Parts/LENS/LensFaceTileData.cpp
+Parts/CREDITS/CreditsPicsData.cpp

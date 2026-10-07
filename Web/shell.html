@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no"/>
+    <title>Second Reality: Reawakened</title>
+    <style>
+        html, body { margin:0; padding:0; height:100%; background:black; }
+        #canvas {
+          position: fixed; inset: 0;
+          width: 100vw; height: 100dvh;
+          display:block; touch-action:none;
+          image-rendering: pixelated;
+        }
+        #startpad {
+          position: fixed; inset: 0; z-index: 10;
+          display: flex; align-items: center; justify-content: center;
+          background: #000; color: #e8e8e8; text-align: center; cursor: pointer;
+          font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+          padding: 24px; user-select: none; -webkit-user-select: none;
+        }
+        #startpad.hidden { display: none; }
+        #startpad h1 { margin: 0 0 14px; font-size: clamp(20px, 4.5vw, 44px); font-weight: 600; letter-spacing: .02em; }
+        #startpad .sub { margin: 0; color: #8b93a1; min-height: 1.5em; }
+        #startpad.ready .sub { color: #e8e8e8; }
+        #startpad .hint { margin: 18px 0 0; font-size: 13px; color: #6b7280; }
+    </style>
+    <meta name="description" content="Second Reality: Reawakened">
+  </head>
+  <body>
+    <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+
+    <div id="startpad" onclick="srStart()" ontouchstart="srStart()">
+      <div>
+        <h1>Second Reality: Reawakened</h1>
+        <p class="sub" id="srStatus">Loading…</p>
+        <p class="hint" id="srHint">Sound starts after your click.</p>
+      </div>
+    </div>
+
+    <script>
+      function srSetStatus(text) {
+        var el = document.getElementById('srStatus');
+        if (el && text) el.textContent = text;
+      }
+      function srReady() {
+        document.getElementById('startpad').classList.add('ready');
+        srSetStatus('Click to start');
+      }
+      function srStart() {
+        var pad = document.getElementById('startpad');
+        if (!pad.classList.contains('ready')) return;
+        pad.classList.add('hidden');
+        if (typeof Module.callMain === 'function') { Module.callMain(); }
+        else { console.error('Module.callMain is not exported (rebuild with -sEXPORTED_RUNTIME_METHODS=callMain)'); }
+      }
+      async function srFetch(url, onBytes) {
+        var res = await fetch(url, { cache: 'no-cache' });
+        if (!res.ok) throw new Error(url + ': HTTP ' + res.status);
+        if (!res.body) return new Uint8Array(await res.arrayBuffer());
+        var reader = res.body.getReader(), chunks = [], size = 0;
+        for (;;) {
+          var r = await reader.read();
+          if (r.done) break;
+          chunks.push(r.value); size += r.value.length;
+          if (onBytes) onBytes(r.value.length);
+        }
+        var out = new Uint8Array(size), offset = 0;
+        chunks.forEach(function(c) { out.set(c, offset); offset += c.length; });
+        return out;
+      }
+
+      var Module = {
+        noInitialRun: true,
+        preRun: [],
+        postRun: [],
+        print: function(text) { console.log(Array.prototype.slice.call(arguments).join(' ')); },
+        printErr: function(text) { console.error(Array.prototype.slice.call(arguments).join(' ')); },
+        canvas: (function() { return document.getElementById('canvas'); })(),
+        setStatus: function(text) { if (text) srSetStatus(text); },
+        monitorRunDependencies: function() {},
+        onRuntimeInitialized: function() { srReady(); },
+        instantiateWasm: function(imports, successCallback) {
+          (async function() {
+            try {
+              var parts = ['index.wasm'];
+              var manifest = await fetch('index.wasm.parts.json', { cache: 'no-cache' });
+              if (manifest.ok) parts = await manifest.json();
+              var received = 0, shown = 0;
+              srSetStatus('Loading…');
+              var buffers = await Promise.all(parts.map(function(p) {
+                return srFetch(p, function(n) {
+                  received += n;
+                  var mb = Math.floor(received / 1048576);
+                  if (mb !== shown) { shown = mb; srSetStatus('Loading… ' + mb + ' MB'); }
+                });
+              }));
+              srSetStatus('Preparing…');
+              var total = buffers.reduce(function(n, b) { return n + b.length; }, 0);
+              var bytes = new Uint8Array(total), offset = 0;
+              buffers.forEach(function(b) { bytes.set(b, offset); offset += b.length; });
+              var result = await WebAssembly.instantiate(bytes, imports);
+              successCallback(result.instance);
+            } catch (e) {
+              console.error('wasm load failed: ' + e);
+              srSetStatus('Load failed — see the console (F12)');
+            }
+          })();
+          return {};
+        }
+      };
+    </script>
+    {{{ SCRIPT }}}
+  </body>
+</html>
